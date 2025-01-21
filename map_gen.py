@@ -21,27 +21,21 @@ class Map:
                 color = {
                     0 : "#4585d9",
                     1 : "#51ad50"
+                    # 0 : "#51ad50",
+                    # 1 : "#4585d9"
                 }
 
                 self.canva.create_rectangle(
                     coor["origin_x"], coor["origin_y"],
                     coor["end_x"], coor["end_y"],
                     fill = color[each_tile.get_state()], 
-                    # outline = "#1f1c15"
+                    outline = color[each_tile.get_state()]
                 )
-                # self.canva.create_text(
-                #     coor["origin_x"] + (C ELL_SIZE / 2), 
-                #     coor["origin_y"]  + (CELL_SIZE / 2),
-                #     text = each_tile.get_coor(), anchor = 'center'
-                # )        
-        self.canva.create_rectangle(
-            10, 10,
-            150, 30,
-            fill = "white", outline = 'black'
-            )
         self.canva.create_text(
-            80, 20, text = "Current Generation: {}\nLandmass:{}".format(
-                self.generation, sum(value == 0 for value in self.statistics())
+            90, 30, font = ("Helvetica" , 16), fill = 'black',
+            text = "Current Generation: {}\nLandmass:{}".format(
+                self.generation, 
+                round(sum(value == 1 for value in self.statistics()) / (TOTAL_ROW * TOTAL_COL), 5)
                 )
         )
 
@@ -53,19 +47,18 @@ class Map:
 
     def generate_new_map(self):
         """Generate a new random map and schedule the next generation."""
-        if self.generation < 35:
+        if self.generation < 38:
             self.generate_map()  # Update the canvas
             self.cellular_automata()
             self.generation += 1
-            print(self.statistics())
-            self.root.after(50, self.generate_new_map)  # Schedule the next update
+            self.root.after(10, self.generate_new_map)  # Schedule the next update
         else:
             print("Simulation complete")
 
     def statistics(self):
         for row in self.grid:
             for tile in row:
-                yield tile
+                yield tile.get_state()
 
         
 
@@ -114,26 +107,48 @@ class Tile:
 
     # Rules for cellular automata
     def rule_gen(self, neighbors_list):
-        if neighbors_list.count(1) >= 7:
-            # gen_value = 1 if random.random() < 0.8 else 0
-            # self.future_state = gen_value
+        # MODEL1
+        # if neighbors_list.count(1) >= 7:
+        #     self.future_state = 1
+        # elif 3 <= neighbors_list.count(1) < 7:
+        #     gen_value = 1 if random.random() < 0.58 else 0
+        #     self.future_state = gen_value
+        # elif  neighbors_list.count(1) < 3:
+        #     self.future_state = 0
+
+        #  MODEL 2
+        fixed_rand = random.random()
+        if neighbors_list.count(1) == 8:
             self.future_state = 1
-        elif 3 <= neighbors_list.count(1) < 7:
-            gen_value = 1 if random.random() < 0.58 else 0
-            self.future_state = gen_value
-        elif  neighbors_list.count(1) < 3:
+        elif neighbors_list.count(1) == 7:
+            self.future_state = 1
+        elif neighbors_list.count(1) == 6:
+            self.future_state = 1 if fixed_rand < .63 else 0
+        elif neighbors_list.count(1) == 5:
+            self.future_state = 1 if fixed_rand < .53 else 0
+        elif neighbors_list.count(1) == 4:
+            self.future_state = 1 if fixed_rand < .54 else 0
+        elif neighbors_list.count(1) == 3:
+            self.future_state = 1 if fixed_rand < .5 else 0
+        elif neighbors_list.count(1) == 2:
+            self.future_state = 1 if fixed_rand < .1675 else 0
+        elif neighbors_list.count(1) == 1:
             self.future_state = 0
-            # gen_value = 1 if random.random() < 0.2 else 0
-            # self.future_state = gen_value
+        elif neighbors_list.count(1) == 0:
+            self.future_state = 0
+
 
     def update_state(self):
         self.state = self.future_state
 
 # CONSTANTS
-TOTAL_ROW = 135
-TOTAL_COL = 180
-CELL_SIZE = 10
-OFFSET = 1.5
+TOTAL_ROW = 140
+TOTAL_COL = 200
+CELL_SIZE = 7.5
+# TOTAL_ROW = 75
+# TOTAL_COL = 110
+# CELL_SIZE = 15
+OFFSET = 0
 
 root = tk.Tk()
 root.title("2D Map - Cellular Automata")
