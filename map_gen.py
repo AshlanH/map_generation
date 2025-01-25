@@ -19,10 +19,10 @@ class Map:
             for each_tile in row:
                 coor = each_tile.coordinate()
                 color = {
-                    0 : "#4585d9",
-                    1 : "#51ad50"
-                    # 0 : "#51ad50",
-                    # 1 : "#4585d9"
+                    # 0 : "#4585d9",
+                    # 1 : "#51ad50"
+                    0 : "#6eb8e0",
+                    1 : "#704e2a"
                 }
 
                 self.canva.create_rectangle(
@@ -47,7 +47,7 @@ class Map:
 
     def generate_new_map(self):
         """Generate a new random map and schedule the next generation."""
-        if self.generation < 38:
+        if self.generation < 31:
             self.generate_map()  # Update the canvas
             self.cellular_automata()
             self.generation += 1
@@ -142,12 +142,12 @@ class Tile:
         self.state = self.future_state
 
 # CONSTANTS
-TOTAL_ROW = 140
-TOTAL_COL = 200
+TOTAL_ROW = 120
+TOTAL_COL = 180
 CELL_SIZE = 7.5
-# TOTAL_ROW = 75
-# TOTAL_COL = 110
-# CELL_SIZE = 15
+# TOTAL_ROW = 85
+# TOTAL_COL = 120
+# CELL_SIZE = 10
 OFFSET = 0
 
 root = tk.Tk()
@@ -173,5 +173,10 @@ start_map = Map(TOTAL_ROW, TOTAL_COL, CELL_SIZE, canvas, root)
 
 start_map.generate_new_map()
 
+def get_coordinates(event):
+    canvas.itemconfigure(tag, text='({x}, {y})'.format(x=event.x, y=event.y))
 
+canvas.bind('<Motion>', get_coordinates)
+canvas.bind('<Enter>', get_coordinates)  # handle <Alt>+<Tab> switches between windows
+tag = canvas.create_text(10, 10, text='', anchor='nw')
 root.mainloop()

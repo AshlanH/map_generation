@@ -1,33 +1,36 @@
 import numpy as np
-import random
-import tkinter as tk
-import utilities
-root = tk.Tk()
-root.title("2D Map - Cellular Automata")
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+def calculate_weighted_mean(neighbors_list, current_state, p=3, inverted=False, epsilon=0.001):
+    if inverted:
+        weights = [1 / (abs(neighbor - current_state)**p + epsilon) for neighbor in neighbors_list]
+    else:
+        weights = [abs(neighbor - current_state)**p for neighbor in neighbors_list]
+    
+    total_weight = sum(weights)
+    if total_weight == 0:
+        total_weight = 1  # Avoid division by zero
+    
+    normalized_weights = [w / total_weight for w in weights]
+    # weighted_mean = sum(w * neighbor for w, neighbor in zip(normalized_weights, neighbors_list))
+    
+    # return weighted_mean
+
+    # return weights
+    return normalized_weights
+
+# neighbors_list = [0.56, 0.72, 0.73, 0.44, 0.67, 0.66, 0.55, 0.5]
+neighbors_list = np.arange(0, 1, 0.05)
+current_state = 0.5
+
+weighted_mean = calculate_weighted_mean(neighbors_list, current_state, p=2)
+# future_state = weighted_mean - current_state
 
 
-canvas = tk.Canvas(root, width = 800, height = 150)
-canvas.pack()
+# print(future_state)
 
-start_color = (244, 164, 96)  # Light brown
-end_color = (101, 67, 33)     # Dark brown
+# sns.scatterplot(x = neighbors_list, y = calculate_weighted_mean(neighbors_list, current_state, p = 2))
 
-def get_colors(list):
-    for elevation in list:
-        # color = utilities.interpolate_color(elevation, start_color, end_color)
-        color = utilities.interpolate_color(utilities.normalize(elevation, 0.4, 1), start_color, end_color)
-        yield f'#{color[0]:02x}{color[1]:02x}{color[2]:02x}'
-
-# output = get_colors([0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
-scaled_output = get_colors([0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
-
-for i in range(0, 7):
-    color_hex = next(scaled_output)
-    canvas.create_rectangle(
-        i * 80, 0,
-        i * 80 + 80,80,
-        fill = color_hex,
-        outline = color_hex
-    )
-
-root.mainloop()
+# plt.show()
+print(calculate_weighted_mean(neighbors_list, current_state, 2))
