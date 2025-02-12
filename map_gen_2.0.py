@@ -3,6 +3,7 @@ import tkinter as tk
 import random
 import utilities
 import math
+import scipy.ndimage as ndimage
 
 class Map:
     def __init__(self, row, col, cell_size, canva, root, simulation_num, annot = False):
@@ -48,21 +49,21 @@ class Map:
                 )
         )
 
-    def cellular_automata(self):
-        for row in self.grid:
-            for each_tile in row:
-                each_tile.rule_gen(each_tile.get_neighbors())
-                each_tile.update_state()
-
-    def simulation(self):
+    def simulation(self): # **MAIN** Starts Simulation
         """Generate a new random map and schedule the next generation."""
-        if self.generation <= self.simulation_num:
+        if self.generation <= self.simulation_num - 1:
+            for row in self.grid:
+                for each_tile in row:
+                    each_tile.formation()
+                    each_tile.update_state()
+            self.generation += 1 #number of iteration / generation
             self.generate_map()  # Update the canvas
-            self.cellular_automata()
-            self.generation += 1
             self.root.after(100, self.simulation)  # Schedule the next update
         else:
-            print("Simulation complete")
+            self.canva.create_text(
+                300, self.canva.winfo_reqheight() - 35, font = ("Helvetica" , 16), fill = 'black',
+                text = "Simulation Complete"
+            )
 
     def statistics(self):
         for row in self.grid:
@@ -109,30 +110,52 @@ class Tile:
         # Enter the value/state of all valid neighboring cells
         for dx, dy in neighbors:
             if((TOTAL_COL > self.x + dx >= 0)) and ((TOTAL_ROW > self.y + dy >= 0)):
-                neighbors_list.append((start_map.grid[self.y + dy][self.x + dx]).get_state())
+                neighbors_list.append((start_map.grid[self.y + dy][self.x + dx]))
         return np.array(neighbors_list)
 
     # Rules for cellular automata
-    def rule_gen(self, neighbors_list):
-        mean_difference=  np.mean([neighbor - self.state for neighbor in neighbors_list])
+    def formation(self):
+        neighbors_list = self.get_neighbors()
+        mean_difference =  np.mean([neighbor.get_state() - self.state for neighbor in neighbors_list])
+        land_neighbor =  sum(neighbor.get_type() == 'Sea' for neighbor in neighbors_list)
 
         # Removes rogue land tiles toward the end of the generation
-        if start_map.generation > start_map.simulation_num * .98:
-            if np.mean(neighbors_list) < 0.4:
-                self.future_state = np.mean(neighbors_list)
+        if start_map.generation > start_map.simulation_num * .4:
+            if np.mean([neighbor.get_state() for neighbor in neighbors_list]) < 0.4:
+                self.future_state = np.mean([neighbor.get_state() for neighbor in neighbors_list])
                 return
-
-        if self.state >= 0.85:
-            # self.future_state = self.increment(math.exp(-5.5 * self.state) * (mean_difference) + np.random.uniform(0.005,0.0012))
-            self.future_state = self.increment(math.exp(-5.5 * self.state) * (mean_difference) + np.random.uniform(0.005,0.008))
-        elif 0.4 <= self.state < 0.85:
-            self.future_state = self.increment(math.exp(-3 * self.state) * (mean_difference) + np.random.uniform(-0.005, 0.016))
-            # self.future_state = self.increment(math.exp(-3 * self.state) * (mean_difference) + np.random.uniform(-0.003, 0.008))
-        elif self.state < 0.4:
-            # self.future_state = self.increment(math.exp(-3.5 * self.state) * (mean_difference) + np.random.uniform(-0.095, -0.045))
-            self.future_state = self.increment(math.exp(-3.5 * self.state) * (mean_difference) + np.random.uniform(-0.095, -0.080))
-
-
+            
+        if start_map.generation < start_map.simulation_num * .725:
+            if self.state >= 0.7:
+                # self.future_state = self.increment(math.exp(-5.5 * self.state) * (mean_difference) + np.random.uniform(0.005,0.0012))
+                self.future_state = self.increment(math.exp(-5.5 * self.state) * (mean_difference) + np.random.uniform(0.002,0.0035))
+            elif 0.4 <= self.state < 0.85:
+                # self.future_state = self.increment(math.exp(-3 * self.state) * (mean_difference) + np.random.uniform(-0.005, 0.016))
+                self.future_state = self.increment(math.exp(-3.7 * self.state) * (mean_difference) + np.random.uniform(-0.006, -0.004))
+            elif self.state < 0.4:
+                # self.future_state = self.increment(math.exp(-4 * self.state) * (mean_difference) + np.random.uniform(-0.065, -0.045))
+                self.future_state = self.increment(math.exp(-5.5 * self.state) * (mean_difference) + np.random.uniform(-0.08, -0.06))
+        elif start_map.generation > start_map.simulation_num * .7:
+            if land_neighbor > 3:
+                if self.state >= 0.85:
+                    # self.future_state = self.increment(math.exp(-5.5 * self.state) * (mean_difference) + np.random.uniform(0.005,0.0012))
+                    self.future_state = self.increment(math.exp(-5.5 * self.state) * (mean_difference) + np.random.uniform(0.005,0.008))
+                elif 0.4 <= self.state < 0.85:
+                    self.future_state = self.increment(math.exp(-3 * self.state) * (mean_difference) + np.random.uniform(0.005, 0.07))
+                    # self.future_state = self.increment(math.exp(-3 * self.state) * (mean_difference) + np.random.uniform(-0.003, 0.008))
+                elif self.state < 0.4:
+                    # self.future_state = self.increment(math.exp(-3.5 * self.state) * (mean_difference) + np.random.uniform(-0.095, -0.045))
+                    self.future_state = self.increment(math.exp(-3.5 * self.state) * (mean_difference) + np.random.uniform(-0.065, -0.05))
+            else:
+                if self.state >= 0.85:
+                # self.future_state = self.increment(math.exp(-5.5 * self.state) * (mean_difference) + np.random.uniform(0.005,0.0012))
+                    self.future_state = self.increment(math.exp(-5.5 * self.state) * (mean_difference) + np.random.uniform(0.003,0.005))
+                elif 0.4 <= self.state < 0.85:
+                    self.future_state = self.increment(math.exp(-3 * self.state) * (mean_difference) + np.random.uniform(0.003, 0.005))
+                    # self.future_state = self.increment(math.exp(-3 * self.state) * (mean_difference) + np.random.uniform(-0.003, 0.008))
+                elif self.state < 0.4:
+                    # self.future_state = self.increment(math.exp(-3.5 * self.state) * (mean_difference) + np.random.uniform(-0.095, -0.045))
+                    self.future_state = self.increment(math.exp(-3.5 * self.state) * (mean_difference) + np.random.uniform(0.003, 0.005))
 
     def update_state(self):
         self.state = self.future_state
@@ -161,13 +184,13 @@ class Tile:
 # TOTAL_COL = 35
 # CELL_SIZE = 50
 
-TOTAL_ROW = 55
-TOTAL_COL = 80
-CELL_SIZE = 10
-
-# TOTAL_ROW = 75
-# TOTAL_COL = 130
+# TOTAL_ROW = 60
+# TOTAL_COL = 85
 # CELL_SIZE = 10
+
+TOTAL_ROW = 75
+TOTAL_COL = 130
+CELL_SIZE = 10
 OFFSET = 0
 
 root = tk.Tk()
@@ -182,7 +205,8 @@ canvas.pack()
 
 print(canvas.winfo_reqheight())
 print(canvas.winfo_reqwidth())
-start_map = Map(TOTAL_ROW, TOTAL_COL, CELL_SIZE, canvas, root, 140, annot=False)
+start_map = Map(TOTAL_ROW, TOTAL_COL, CELL_SIZE, canvas, root, 75, annot=False)
 
 start_map.simulation()
+
 root.mainloop()
